@@ -25,31 +25,8 @@ export default function InscripcionPage() {
     setLoading(true);
     setMessage(null);
 
-    // 1. Crear usuario en Supabase Auth (documento = contraseña)
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email: correo,
-      password: documento,
-    });
-
-    if (authError) {
-      setMessage({ type: 'error', text: authError.message });
-      setLoading(false);
-      return;
-    }
-
-    const userId = authData.user?.id;
-    if (!userId) {
-      setMessage({
-        type: 'error',
-        text: 'No se pudo crear la cuenta. Intenta de nuevo.',
-      });
-      setLoading(false);
-      return;
-    }
-
-    // 2. Crear el perfil en la tabla participantes
+    // Se guarda directo en la tabla `participantes`, sin auth ni verificación.
     const { error: dbError } = await supabase.from('participantes').insert({
-      id: userId,
       nombre_completo: nombreCompleto,
       documento,
       correo,
@@ -66,7 +43,7 @@ export default function InscripcionPage() {
 
     setMessage({
       type: 'success',
-      text: '¡Inscripción exitosa! Ya puedes iniciar sesión con tu correo y documento.',
+      text: '¡Inscripción exitosa!',
     });
     setLoading(false);
   }
@@ -75,8 +52,8 @@ export default function InscripcionPage() {
     <div className="auth-page">
       <div className="auth-brand">
         <h1>
-          Consultorio Jurídico
-          <span>Unicórdoba</span>
+          Curso Teórico-Práctico
+          <span>Consultorio Juridico Unicordoba</span>
         </h1>
         <p>Completa tu inscripción para continuar</p>
       </div>
@@ -84,7 +61,9 @@ export default function InscripcionPage() {
       <div className="auth-form-side">
         <div className="auth-card">
           <h2>Formulario de inscripción</h2>
-          <p className="subtitle">Tu contraseña será tu número de documento</p>
+          <div>
+            <h1></h1>
+          </div>
 
           {message && <div className={`form-message ${message.type}`}>{message.text}</div>}
 
@@ -109,7 +88,7 @@ export default function InscripcionPage() {
                 required
                 value={documento}
                 onChange={(e) => setDocumento(e.target.value)}
-                placeholder="Ej. 1067123456"
+                placeholder="Ej. 123456789"
               />
             </div>
 
@@ -121,7 +100,7 @@ export default function InscripcionPage() {
                 required
                 value={correo}
                 onChange={(e) => setCorreo(e.target.value)}
-                placeholder="tucorreo@unicordoba.edu.co"
+                placeholder="usuario@correo.com"
               />
             </div>
 
@@ -176,7 +155,7 @@ export default function InscripcionPage() {
           </form>
 
           <div className="switch-mode">
-            ¿Ya tienes cuenta? <a href="/login">Inicia sesión</a>
+            ¿Ya tienes cuenta? <a href="/login">Inicia sesión aquí</a>
           </div>
         </div>
       </div>
