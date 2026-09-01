@@ -151,9 +151,41 @@ export default function AdminPage() {
             </div>
           )}
 
-          {found && (
-            <div>
-              <h3 className="escaneo-nombre">{found.nombre_completo}</h3>
+          {found && <p className="escaneo-placeholder">Código leído. Mostrando carnet...</p>}
+        </div>
+      </div>
+
+      {found && (
+        <div className="carnet-overlay" role="dialog" aria-modal="true">
+          <div className="carnet-modal">
+            <button
+              type="button"
+              className="carnet-close"
+              onClick={escanearOtro}
+              aria-label="Cerrar"
+            >
+              ×
+            </button>
+
+            <div className="carnet-ribbon">
+              <span className="carnet-hole" aria-hidden="true" />
+              <div className="carnet-check">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path
+                    d="M5 12.5L9.5 17L19 7"
+                    stroke="currentColor"
+                    strokeWidth="3"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </div>
+              <p className="carnet-wordmark">Consultorio Jurídico Unicordoba</p>
+            </div>
+
+            <div className="carnet-body">
+              <h3 className="carnet-nombre">{found.nombre_completo}</h3>
+
               <dl className="escaneo-datos">
                 <dt>Documento</dt>
                 <dd>{found.documento}</dd>
@@ -198,9 +230,9 @@ export default function AdminPage() {
                 Escanear otro
               </button>
             </div>
-          )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

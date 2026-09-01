@@ -145,6 +145,17 @@ body {
   color: #5b6b62;
 }
 
+.switch-mode-btn {
+  width: auto;
+  padding: 8px 16px;
+  margin-bottom: 24px;
+  font-size: 0.82rem;
+}
+
+.form-espacio {
+  height: 28px;
+}
+
 .switch-mode button {
   background: none;
   border: none;
@@ -1038,6 +1049,193 @@ body {
 .asistencia-chip:disabled {
   opacity: 0.7;
   cursor: default;
+}
+
+/* ---------- Modal "carnet" al leer un QR ---------- */
+
+.carnet-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(8, 31, 24, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 60;
+  animation: carnet-overlay-in 0.2s ease both;
+}
+
+@keyframes carnet-overlay-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.carnet-modal {
+  position: relative;
+  width: 100%;
+  max-width: 380px;
+  background: var(--white);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.45);
+  animation: carnet-pop 0.4s cubic-bezier(0.2, 0.9, 0.25, 1.15) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .carnet-overlay,
+  .carnet-modal,
+  .carnet-check {
+    animation: none !important;
+  }
+}
+
+@keyframes carnet-pop {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.carnet-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+  color: var(--white);
+  font-size: 1.3rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 2;
+  transition: background 0.15s ease;
+}
+
+.carnet-close:hover {
+  background: rgba(255, 255, 255, 0.32);
+}
+
+.carnet-ribbon {
+  position: relative;
+  background: var(--green-900);
+  background-image:
+    radial-gradient(var(--green-700) 1.5px, transparent 1.5px),
+    linear-gradient(135deg, var(--green-900) 40%, var(--green-700) 100%);
+  background-size: 18px 18px, 100% 100%;
+  padding: 34px 24px 20px;
+  text-align: center;
+}
+
+.carnet-hole {
+  position: absolute;
+  top: -11px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--green-900);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4), 0 0 0 4px var(--white);
+}
+
+.carnet-check {
+  position: relative;
+  z-index: 1;
+  width: 52px;
+  height: 52px;
+  margin: 0 auto 10px;
+  border-radius: 50%;
+  background: var(--green-500);
+  color: var(--white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 0 6px rgba(47, 163, 84, 0.25);
+  animation: carnet-check-in 0.5s 0.1s cubic-bezier(0.2, 0.9, 0.25, 1.3) both;
+}
+
+.carnet-check svg {
+  width: 26px;
+  height: 26px;
+}
+
+@keyframes carnet-check-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  70% {
+    opacity: 1;
+    transform: scale(1.12);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.carnet-wordmark {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  color: var(--green-100);
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
+  font-weight: 500;
+}
+
+.carnet-body {
+  padding: 26px 26px 30px;
+  text-align: center;
+}
+
+.carnet-nombre {
+  margin: 0 0 18px;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 700;
+  font-size: 1.3rem;
+  color: var(--green-900);
+  line-height: 1.25;
+}
+
+.carnet-body .escaneo-datos {
+  text-align: left;
+  margin-bottom: 4px;
+}
+
+.carnet-body .escaneo-reuniones {
+  margin-top: 4px;
+}
+
+.carnet-body .btn-secundario {
+  margin-top: 4px;
+}
+
+@media (max-width: 480px) {
+  .carnet-ribbon {
+    padding: 30px 20px 18px;
+  }
+
+  .carnet-body {
+    padding: 22px 18px 24px;
+  }
+
+  .carnet-nombre {
+    font-size: 1.15rem;
+  }
 }
 
 @media (max-width: 480px) {

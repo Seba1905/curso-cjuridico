@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 
 const CONSULTORIOS = [
@@ -11,6 +12,7 @@ const CONSULTORIOS = [
 ];
 
 export default function InscripcionPage() {
+  const router = useRouter();
   const [nombreCompleto, setNombreCompleto] = useState('');
   const [documento, setDocumento] = useState('');
   const [correo, setCorreo] = useState('');
@@ -69,9 +71,14 @@ export default function InscripcionPage() {
       <div className="auth-form-side">
         <div className="auth-card">
           <h2>Formulario de inscripción</h2>
-          <div>
-            <h1></h1>
-          </div>
+
+          <button
+            type="button"
+            className="btn-secundario switch-mode-btn"
+            onClick={() => router.push('/login')}
+          >
+            ¿Ya tienes cuenta? Inicia sesión aquí
+          </button>
 
           {message && <div className={`form-message ${message.type}`}>{message.text}</div>}
 
@@ -162,9 +169,7 @@ export default function InscripcionPage() {
             </button>
           </form>
 
-          <div className="switch-mode">
-            ¿Ya tienes cuenta? <a href="/login">Inicia sesión aquí</a>
-          </div>
+          <div className="form-espacio" />
         </div>
       </div>
     </div>
