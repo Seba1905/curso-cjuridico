@@ -72,14 +72,6 @@ export default function InscripcionPage() {
         <div className="auth-card">
           <h2>Formulario de inscripción</h2>
 
-          <button
-            type="button"
-            className="btn-secundario switch-mode-btn"
-            onClick={() => router.push('/login')}
-          >
-            ¿Ya tienes cuenta? Inicia sesión aquí
-          </button>
-
           {message && <div className={`form-message ${message.type}`}>{message.text}</div>}
 
           <form onSubmit={handleSubmit}>
@@ -91,7 +83,7 @@ export default function InscripcionPage() {
                 required
                 value={nombreCompleto}
                 onChange={(e) => setNombreCompleto(e.target.value)}
-                placeholder="Nombre y apellidos"
+                placeholder=""
               />
             </div>
 
@@ -103,7 +95,7 @@ export default function InscripcionPage() {
                 required
                 value={documento}
                 onChange={(e) => setDocumento(e.target.value)}
-                placeholder="Ej. 123456789"
+                placeholder=""
               />
             </div>
 
@@ -115,7 +107,7 @@ export default function InscripcionPage() {
                 required
                 value={correo}
                 onChange={(e) => setCorreo(e.target.value)}
-                placeholder="usuario@correo.com"
+                placeholder=""
               />
             </div>
 
@@ -127,7 +119,7 @@ export default function InscripcionPage() {
                 required
                 value={telefono}
                 onChange={(e) => setTelefono(e.target.value)}
-                placeholder="300 000 0000"
+                placeholder=""
               />
             </div>
 
@@ -142,13 +134,13 @@ export default function InscripcionPage() {
                 max={12}
                 value={semestre}
                 onChange={(e) => setSemestre(e.target.value)}
-                placeholder="Ej. 7"
+                placeholder=""
               />
             </div>
 
             <div className="field">
               <label htmlFor="consultorio">
-                Consultorio <span className="opcional">(opcional)</span>
+                Nivel de consultorio <span className="opcional">(opcional)</span>
               </label>
               <select
                 id="consultorio"
@@ -169,7 +161,15 @@ export default function InscripcionPage() {
             </button>
           </form>
 
-          <div className="form-espacio" />
+          <button
+            type="button"
+            className="btn-secundario switch-mode-btn"
+            onClick={() => router.push('/login')}
+          >
+            ¿Ya tienes cuenta? Inicia sesión aquí
+          </button>
+          <h1></h1>
+          <p>.</p>
         </div>
       </div>
     </div>
