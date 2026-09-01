@@ -859,12 +859,12 @@ body {
   aspect-ratio: 1 / 1;
 }
 
-.escaneo-frame :global(#qr-reader) {
+.escaneo-frame #qr-reader {
   width: 100% !important;
   height: 100% !important;
 }
 
-.escaneo-frame :global(video) {
+.escaneo-frame video {
   width: 100% !important;
   height: 100% !important;
   object-fit: cover;
