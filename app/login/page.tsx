@@ -1,436 +1,365 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 
 type Participante = {
-  id: string;
   nombre_completo: string;
-  documento: string;
-  correo: string;
-  telefono: string;
-  semestre: number | null;
-  consultorio: string | null;
+  qr_code: string;
+  rol: string;
 };
 
-const REUNIONES = [1, 2, 3, 4] as const;
+export default function LoginPage() {
+  const router = useRouter();
+  const [correo, setCorreo] = useState('');
+  const [documento, setDocumento] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [participante, setParticipante] = useState<Participante | null>(null);
 
-export default function AdminPage() {
-  const scannerRef = useRef<any>(null);
-  const [cameraError, setCameraError] = useState<string | null>(null);
-  const [scanning, setScanning] = useState(false);
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
 
-  const [found, setFound] = useState<Participante | null>(null);
-  const [marcadas, setMarcadas] = useState<number[]>([]);
-  const [lookupError, setLookupError] = useState<string | null>(null);
-  const [marking, setMarking] = useState<number | null>(null);
-
-  // Inicia la cámara y el lector de QR al montar la página.
-  useEffect(() => {
-    let isMounted = true;
-
-    import('html5-qrcode').then(({ Html5Qrcode }) => {
-      if (!isMounted) return;
-
-      const scanner = new Html5Qrcode('qr-reader');
-      scannerRef.current = scanner;
-
-      scanner
-        .start(
-          { facingMode: 'environment' },
-          { fps: 10, qrbox: { width: 240, height: 240 } },
-          (decodedText: string) => handleScan(decodedText),
-          () => {
-            // errores de frame individuales (no detecta QR); se ignoran
-          }
-        )
-        .then(() => setScanning(true))
-        .catch(() => {
-          setCameraError(
-            'No se pudo acceder a la cámara. Revisa los permisos del navegador.'
-          );
-        });
-    });
-
-    return () => {
-      isMounted = false;
-      const scanner = scannerRef.current;
-      if (scanner) {
-        scanner.stop().catch(() => {});
-      }
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  async function handleScan(codigo: string) {
-    if (scannerRef.current) {
-      scannerRef.current.pause(true);
-    }
-
-    setLookupError(null);
-    setFound(null);
-    setMarcadas([]);
-
-    const { data: participante, error: dbError } = await supabase
+    const { data, error: dbError } = await supabase
       .from('participantes')
-      .select('id, nombre_completo, documento, correo, telefono, semestre, consultorio')
-      .eq('qr_code', codigo)
+      .select('nombre_completo, qr_code, rol')
+      .eq('correo', correo)
+      .eq('documento', documento)
       .maybeSingle();
 
-    if (dbError || !participante) {
-      setLookupError('Este código QR no corresponde a ningún participante inscrito.');
+    if (dbError) {
+      setError(dbError.message);
+      setLoading(false);
       return;
     }
 
-    const { data: asistencias } = await supabase
-      .from('asistencias')
-      .select('reunion')
-      .eq('participante_id', participante.id);
-
-    setFound(participante as Participante);
-    setMarcadas((asistencias ?? []).map((a) => a.reunion as number));
-  }
-
-  async function marcarAsistencia(reunion: number) {
-    if (!found || marcadas.includes(reunion)) return;
-    setMarking(reunion);
-
-    const { error } = await supabase
-      .from('asistencias')
-      .insert({ participante_id: found.id, reunion });
-
-    // 23505 = ya existía (choque con la restricción unique), lo tratamos como éxito
-    if (!error || error.code === '23505') {
-      setMarcadas((prev) => [...prev, reunion]);
+    if (!data) {
+      setError('Correo o documento incorrectos.');
+      setLoading(false);
+      return;
     }
 
-    setMarking(null);
+    if (data.rol === 'administrador') {
+      router.push('/admin');
+      return;
+    }
+
+    if (data.rol !== 'estudiante') {
+      setError('Esta vista está disponible solo para estudiantes o administradores.');
+      setLoading(false);
+      return;
+    }
+
+    setParticipante(data as Participante);
+    setLoading(false);
   }
 
-  function escanearOtro() {
-    setFound(null);
-    setLookupError(null);
-    setMarcadas([]);
-    if (scannerRef.current) {
-      scannerRef.current.resume();
-    }
-  }
+  const qrImageUrl = participante
+    ? `https://api.qrserver.com/v1/create-qr-code/?size=280x280&margin=0&data=${encodeURIComponent(
+        participante.qr_code
+      )}`
+    : '';
 
   return (
     <div className="page">
-      <header className="header">
-        <p className="wordmark">Consultorio Jurídico Unicordoba</p>
-        <h1>Control de asistencia</h1>
-        <p className="subtitle">Escanea el código QR del estudiante para registrar su asistencia</p>
-      </header>
+      <div className="watermark" aria-hidden="true" />
 
-      <div className="layout">
-        <div className="scanner-panel">
-          <div className="scan-frame">
-            <div id="qr-reader" />
-            <span className="corner tl" />
-            <span className="corner tr" />
-            <span className="corner bl" />
-            <span className="corner br" />
+      {!participante ? (
+        <div className="card">
+          <div className="ribbon">
+            <span className="hole" aria-hidden="true" />
+            <p className="wordmark">Consultorio Jurídico Unicordoba</p>
           </div>
-          {cameraError && <p className="camera-error">{cameraError}</p>}
-          {!cameraError && !scanning && <p className="camera-hint">Activando cámara...</p>}
-        </div>
 
-        <div className="info-panel">
-          {!found && !lookupError && (
-            <p className="placeholder">Esperando a escanear un código QR...</p>
-          )}
+          <div className="card-body">
+            <h1>Curso Teórico-Práctico</h1>
+            <p className="subtitle">Ingresa con tu correo y documento para ver tu credencial</p>
 
-          {lookupError && (
-            <div className="result">
-              <p className="lookup-error">{lookupError}</p>
-              <button className="secondary" onClick={escanearOtro}>
-                Escanear otro
-              </button>
-            </div>
-          )}
+            {error && <div className="error">{error}</div>}
 
-          {found && (
-            <div className="result">
-              <h2>{found.nombre_completo}</h2>
-              <dl>
-                <dt>Documento</dt>
-                <dd>{found.documento}</dd>
-                <dt>Correo</dt>
-                <dd>{found.correo}</dd>
-                <dt>Teléfono</dt>
-                <dd>{found.telefono}</dd>
-                {found.semestre && (
-                  <>
-                    <dt>Semestre</dt>
-                    <dd>{found.semestre}</dd>
-                  </>
-                )}
-                {found.consultorio && (
-                  <>
-                    <dt>Consultorio</dt>
-                    <dd>{found.consultorio}</dd>
-                  </>
-                )}
-              </dl>
-
-              <div className="rule" />
-
-              <p className="reuniones-label">Asistencia por reunión</p>
-              <div className="reuniones">
-                {REUNIONES.map((r) => {
-                  const marcada = marcadas.includes(r);
-                  return (
-                    <button
-                      key={r}
-                      className={marcada ? 'reunion marcada' : 'reunion'}
-                      onClick={() => marcarAsistencia(r)}
-                      disabled={marcada || marking === r}
-                    >
-                      {marcada ? '✓ ' : ''}Reunión {r}
-                    </button>
-                  );
-                })}
+            <form onSubmit={handleSubmit}>
+              <div className="field">
+                <label htmlFor="correo">Correo electrónico</label>
+                <input
+                  id="correo"
+                  type="email"
+                  required
+                  value={correo}
+                  onChange={(e) => setCorreo(e.target.value)}
+                  placeholder="usuario@correo.com"
+                />
               </div>
 
-              <button className="secondary" onClick={escanearOtro}>
-                Escanear otro
+              <div className="field">
+                <label htmlFor="documento">Número de documento</label>
+                <input
+                  id="documento"
+                  type="text"
+                  required
+                  value={documento}
+                  onChange={(e) => setDocumento(e.target.value)}
+                  placeholder="Ej. 123456789"
+                />
+              </div>
+
+              <button type="submit" disabled={loading}>
+                {loading ? 'Verificando...' : 'Ver mi credencial'}
               </button>
-            </div>
-          )}
+            </form>
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="card credential">
+          <div className="ribbon">
+            <span className="hole" aria-hidden="true" />
+            <p className="wordmark">Consultorio Jurídico Unicordoba</p>
+          </div>
+
+          <div className="card-body">
+            <p className="eyebrow-free">Curso Teórico-Práctico</p>
+            <h1 className="name">{participante.nombre_completo}</h1>
+
+            <div className="rule" />
+
+            <div className="qr-frame">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={qrImageUrl} alt="Código QR de acceso" width={200} height={200} />
+            </div>
+
+            <p className="caption">Presenta este código al ingresar a cada sesión</p>
+            <p className="code">{participante.qr_code}</p>
+          </div>
+        </div>
+      )}
 
       <style jsx>{`
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Inter:wght@400;500;600&display=swap');
 
         .page {
           min-height: 100vh;
-          padding: 32px 20px 60px;
+          width: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 32px 20px;
+          position: relative;
           background: radial-gradient(120% 140% at 50% -10%, #163f2f 0%, #0b2b21 55%, #081f18 100%);
           font-family: 'Inter', system-ui, sans-serif;
-          color: #f7f4ec;
-        }
-
-        .header {
-          text-align: center;
-          max-width: 480px;
-          margin: 0 auto 32px;
-        }
-
-        .wordmark {
-          margin: 0 0 6px;
-          font-size: 12.5px;
-          color: #d9cfa8;
-        }
-
-        h1 {
-          margin: 0 0 8px;
-          font-family: 'Poppins', system-ui, sans-serif;
-          font-weight: 600;
-          font-size: 26px;
-        }
-
-        .subtitle {
-          margin: 0;
-          font-size: 14px;
-          color: #cdd6cd;
-        }
-
-        .layout {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 24px;
-          max-width: 880px;
-          margin: 0 auto;
-          justify-content: center;
-        }
-
-        .scanner-panel {
-          flex: 1 1 320px;
-          max-width: 340px;
-        }
-
-        .scan-frame {
-          position: relative;
-          background: #081f18;
-          border-radius: 8px;
           overflow: hidden;
-          aspect-ratio: 1 / 1;
         }
 
-        .scan-frame :global(#qr-reader) {
-          width: 100% !important;
-          height: 100% !important;
-        }
-
-        .scan-frame :global(video) {
-          width: 100% !important;
-          height: 100% !important;
-          object-fit: cover;
-        }
-
-        .corner {
+        .watermark {
           position: absolute;
-          width: 28px;
-          height: 28px;
-          border: 3px solid #c9a227;
+          inset: 0;
+          opacity: 0.05;
+          background-image: repeating-linear-gradient(
+              45deg,
+              transparent 0 38px,
+              #c9a227 38px 39px
+            ),
+            repeating-linear-gradient(-45deg, transparent 0 38px, #c9a227 38px 39px);
           pointer-events: none;
         }
 
-        .tl {
-          top: 10px;
-          left: 10px;
-          border-right: none;
-          border-bottom: none;
-        }
-        .tr {
-          top: 10px;
-          right: 10px;
-          border-left: none;
-          border-bottom: none;
-        }
-        .bl {
-          bottom: 10px;
-          left: 10px;
-          border-right: none;
-          border-top: none;
-        }
-        .br {
-          bottom: 10px;
-          right: 10px;
-          border-left: none;
-          border-top: none;
-        }
-
-        .camera-error,
-        .camera-hint {
-          margin-top: 12px;
-          font-size: 13.5px;
-          color: #e3c9c9;
-          text-align: center;
-        }
-
-        .camera-hint {
-          color: #cdd6cd;
-        }
-
-        .info-panel {
-          flex: 1 1 340px;
+        .card {
+          position: relative;
+          width: 100%;
           max-width: 380px;
           background: #f7f4ec;
-          border-radius: 8px;
-          padding: 26px 26px 28px;
-          color: #17231b;
+          border-radius: 6px;
+          overflow: hidden;
+          box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.5);
         }
 
-        .placeholder {
+        .credential {
+          animation: rise 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .credential {
+            animation: none;
+          }
+        }
+
+        @keyframes rise {
+          from {
+            opacity: 0;
+            transform: translateY(14px) scale(0.98);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+
+        .ribbon {
+          position: relative;
+          background: linear-gradient(135deg, #1f6f4a, #123d2e);
+          padding: 22px 24px 16px;
+          text-align: center;
+        }
+
+        .hole {
+          position: absolute;
+          top: -11px;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 22px;
+          height: 22px;
+          border-radius: 50%;
+          background: #081f18;
+          box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6), 0 0 0 4px #f7f4ec;
+        }
+
+        .wordmark {
+          margin: 6px 0 0;
+          color: #eae3cf;
+          font-size: 12.5px;
+          letter-spacing: 0.02em;
+          font-weight: 500;
+        }
+
+        .card-body {
+          padding: 32px 28px 34px;
+          text-align: center;
+        }
+
+        h1 {
+          margin: 0 0 6px;
+          font-family: 'Poppins', system-ui, sans-serif;
+          font-weight: 600;
+          font-size: 26px;
+          color: #17231b;
+          line-height: 1.2;
+        }
+
+        .subtitle {
+          margin: 0 0 24px;
           color: #6b675c;
           font-size: 14px;
-          text-align: center;
-          margin: 40px 0;
+          line-height: 1.5;
         }
 
-        h2 {
-          margin: 0 0 16px;
-          font-family: 'Poppins', system-ui, sans-serif;
-          font-size: 21px;
-          font-weight: 600;
-        }
-
-        dl {
-          margin: 0;
-          display: grid;
-          grid-template-columns: auto 1fr;
-          gap: 6px 14px;
-          font-size: 13.5px;
-        }
-
-        dt {
+        .eyebrow-free {
+          margin: 0 0 2px;
           color: #6b675c;
+          font-size: 13px;
         }
 
-        dd {
-          margin: 0;
-          text-align: right;
+        .name {
+          font-size: 28px;
+          margin-bottom: 18px;
         }
 
         .rule {
-          width: 100%;
-          height: 1px;
-          background: #e4dcc4;
-          margin: 20px 0 16px;
+          width: 56px;
+          height: 2px;
+          background: #c9a227;
+          margin: 0 auto 22px;
         }
 
-        .reuniones-label {
-          margin: 0 0 10px;
+        .field {
+          text-align: left;
+          margin-bottom: 16px;
+        }
+
+        label {
+          display: block;
           font-size: 13px;
           color: #45493f;
+          margin-bottom: 6px;
+          font-weight: 500;
         }
 
-        .reuniones {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 10px;
-          margin-bottom: 20px;
-        }
-
-        .reunion {
-          padding: 10px 8px;
+        input {
+          width: 100%;
+          box-sizing: border-box;
+          padding: 11px 13px;
           border: 1px solid #d8d2bf;
           border-radius: 4px;
           background: #fffdf8;
-          font-size: 13.5px;
-          font-weight: 500;
+          font-size: 15px;
           font-family: inherit;
           color: #17231b;
+          outline: none;
+          transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        input:focus-visible {
+          border-color: #1f6f4a;
+          box-shadow: 0 0 0 3px rgba(31, 111, 74, 0.18);
+        }
+
+        button {
+          width: 100%;
+          margin-top: 6px;
+          padding: 12px;
+          border: none;
+          border-radius: 4px;
+          background: #17231b;
+          color: #f7f4ec;
+          font-size: 15px;
+          font-weight: 500;
+          font-family: inherit;
           cursor: pointer;
-          transition: background 0.15s ease, border-color 0.15s ease;
+          transition: background 0.15s ease;
         }
 
-        .reunion:hover:not(:disabled) {
-          border-color: #1f6f4a;
+        button:hover:not(:disabled) {
+          background: #1f6f4a;
         }
 
-        .reunion.marcada {
-          background: #eaf3ec;
-          border-color: #1f6f4a;
-          color: #1f6f4a;
+        button:focus-visible {
+          outline: 2px solid #c9a227;
+          outline-offset: 2px;
+        }
+
+        button:disabled {
+          opacity: 0.6;
           cursor: default;
         }
 
-        .reunion:disabled {
-          opacity: 0.85;
-        }
-
-        .lookup-error {
+        .error {
           background: #fbeaea;
           color: #9c3b3b;
           border: 1px solid #eecccc;
           border-radius: 4px;
-          padding: 12px 14px;
+          padding: 10px 12px;
           font-size: 13.5px;
-          margin: 0 0 18px;
+          margin-bottom: 18px;
+          text-align: left;
         }
 
-        .secondary {
-          width: 100%;
-          padding: 11px;
-          border: 1px solid #17231b;
-          border-radius: 4px;
-          background: transparent;
-          color: #17231b;
-          font-size: 14px;
-          font-weight: 500;
-          font-family: inherit;
-          cursor: pointer;
-          transition: background 0.15s ease, color 0.15s ease;
+        .qr-frame {
+          display: inline-flex;
+          padding: 14px;
+          background: #ffffff;
+          border: 1px solid #e4dcc4;
+          border-radius: 6px;
+          box-shadow: 0 8px 20px -10px rgba(0, 0, 0, 0.25);
+          margin-bottom: 18px;
         }
 
-        .secondary:hover {
-          background: #17231b;
-          color: #f7f4ec;
+        .qr-frame img {
+          display: block;
+          width: 200px;
+          height: 200px;
+        }
+
+        .caption {
+          margin: 0 0 10px;
+          color: #45493f;
+          font-size: 13.5px;
+        }
+
+        .code {
+          margin: 0;
+          color: #9a9584;
+          font-size: 12px;
+          letter-spacing: 0.02em;
         }
       `}</style>
     </div>
