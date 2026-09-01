@@ -603,7 +603,7 @@ body {
   }
 
   .admin-table {
-    min-width: 620px;
+    min-width: 760px;
   }
 
   .admin-acciones {
@@ -1004,6 +1004,40 @@ body {
 
 .escaneo-reunion:disabled {
   opacity: 0.85;
+}
+
+.asistencia-chips {
+  display: flex;
+  gap: 6px;
+}
+
+.asistencia-chip {
+  width: 30px;
+  height: 30px;
+  border: 1.5px solid #d7e6db;
+  border-radius: 8px;
+  background: var(--white);
+  color: var(--green-900);
+  font-size: 0.78rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.asistencia-chip:hover:not(:disabled) {
+  border-color: var(--green-500);
+}
+
+.asistencia-chip.marcada {
+  background: var(--green-700);
+  border-color: var(--green-700);
+  color: var(--white);
+}
+
+.asistencia-chip:disabled {
+  opacity: 0.7;
+  cursor: default;
 }
 
 @media (max-width: 480px) {

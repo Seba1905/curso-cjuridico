@@ -36,7 +36,15 @@ export default function InscripcionPage() {
     });
 
     if (dbError) {
-      setMessage({ type: 'error', text: dbError.message });
+      const esDocumentoDuplicado =
+        dbError.code === '23505' && dbError.message.includes('participantes_documento_key');
+
+      setMessage({
+        type: 'error',
+        text: esDocumentoDuplicado
+          ? 'Este número de documento ya está registrado.'
+          : dbError.message,
+      });
       setLoading(false);
       return;
     }
